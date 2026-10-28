@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solitaire Klondike - Assistant de Résolution</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Top Navigation Bar -->
+    <header class="app-header">
+        <div class="header-left">
+            <span class="app-logo">🂠</span>
+            <h1 class="app-title">Solitaire Klondike <span class="app-subtitle">Assistant de Résolution</span></h1>
+        </div>
+        <div class="header-right">
+            <button id="btn-header-reconfigure" class="btn btn-secondary hidden" title="Retourner à la configuration">
+                ⚙️ Configuration
+            </button>
+            <button id="btn-header-new-game" class="btn btn-primary hidden" title="Commencer une nouvelle partie">
+                ➕ Nouvelle Partie
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Application Container -->
+    <main class="app-container">
+
+        <!-- ========================================== -->
+        <!-- 1. SETUP SCREEN                            -->
+        <!-- ========================================== -->
+        <section id="setup-screen" class="screen setup-screen">
+            <div class="setup-container">
+                <div class="setup-header">
+                    <h2>Configuration Initiale</h2>
+                    <p class="setup-instructions">
+                        Sélectionnez les 7 cartes visibles du tableau, puis les 24 cartes ordonnées de la pioche.
+                        Cliquez sur un emplacement pour l'activer, puis choisissez sa carte dans la grille à droite.
+                    </p>
+                </div>
+
+                <div class="setup-layout">
+                    <!-- Left Column: Slots for Tableau & Pioche -->
+                    <div class="setup-slots-column">
+                        <!-- 7 Tableau Column Slots -->
+                        <div class="setup-section-box">
+                            <div class="section-title-bar">
+                                <h3>Colonnes du Tableau (Cartes Visibles)</h3>
+                                <span class="slot-counter" id="tableau-slot-counter">0 / 7 renseignées</span>
+                            </div>
+                            <div class="tableau-slots-grid" id="tableau-slots">
+                                <!-- 7 slots generated via JS -->
+                            </div>
+                        </div>
+
+                        <!-- 24 Pioche / Stock Slots -->
+                        <div class="setup-section-box">
+                            <div class="section-title-bar">
+                                <h3>Pioche (24 cartes dans l'ordre)</h3>
+                                <span class="slot-counter" id="stock-slot-counter">0 / 24 renseignées</span>
+                            </div>
+                            <div class="stock-slots-grid" id="stock-slots">
+                                <!-- 24 slots generated via JS -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Column: 52-Card Picker Palette -->
+                    <div class="setup-picker-column">
+                        <div class="setup-section-box picker-box">
+                            <div class="section-title-bar">
+                                <h3>Sélecteur de Cartes</h3>
+                                <div class="picker-quick-actions">
+                                    <button id="btn-random-fill" class="btn btn-small btn-secondary" title="Générer une donne aléatoire valide">
+                                        🎲 Donne Aléatoire
+                                    </button>
+                                    <button id="btn-reset-setup" class="btn btn-small btn-outline" title="Effacer toutes les sélections">
+                                        🗑️ Tout Effacer
+                                    </button>
+                                </div>
+                            </div>
+                            <p class="picker-help">
+                                Emplacement actif : <strong id="active-slot-label">Colonne 1</strong>
+                            </p>
+                            <!-- 4 rows x 13 columns grid -->
+                            <div class="card-picker-grid" id="card-picker-grid">
+                                <!-- Populated dynamically by app.js -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Setup Footer Actions & Error Messages -->
+                <div class="setup-footer">
+                    <div id="setup-error" class="error-banner hidden" role="alert"></div>
+                    <div class="setup-actions">
+                        <button id="btn-validate-setup" class="btn btn-primary btn-large">
+                            Valider et Démarrer
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- 2. GAME SCREEN                             -->
+        <!-- ========================================== -->
+        <section id="game-screen" class="screen game-screen hidden">
+            <div class="game-layout">
+                <!-- Left Section: Main Solitaire Game Felt Board -->
+                <div class="game-board-area">
+                    <div class="solitaire-board" id="solitaire-board">
+                        
+                        <!-- Top Row: Stock, Waste, Spacing, and 4 Foundations -->
+                        <div class="board-top-row">
+                            <!-- Stock & Waste Piles -->
+                            <div class="stock-waste-group">
+                                <div class="pile-container">
+                                    <span class="pile-label">Pioche</span>
+                                    <div id="stock-pile" class="card-slot stock-pile" title="Piocher une carte">
+                                        <!-- Stock pile content rendered dynamically -->
+                                    </div>
+                                    <span class="pile-count" id="stock-count">0</span>
+                                </div>
+
+                                <div class="pile-container">
+                                    <span class="pile-label">Défausse</span>
+                                    <div id="waste-pile" class="card-slot waste-pile" title="Défausse">
+                                        <!-- Top waste card rendered dynamically -->
+                                    </div>
+                                    <span class="pile-count" id="waste-count">0</span>
+                                </div>
+                            </div>
+
+                            <div class="top-row-spacer"></div>
+
+                            <!-- 4 Foundations: Hearts (H), Diamonds (D), Clubs (C), Spades (S) -->
+                            <div class="foundations-group">
+                                <div class="pile-container">
+                                    <span class="pile-label">♥ Cœurs</span>
+                                    <div id="foundation-H" class="card-slot foundation-pile" data-suit="H" title="Fondation Cœur">
+                                        <span class="foundation-watermark red">♥</span>
+                                    </div>
+                                </div>
+
+                                <div class="pile-container">
+                                    <span class="pile-label">♦ Carreaux</span>
+                                    <div id="foundation-D" class="card-slot foundation-pile" data-suit="D" title="Fondation Carreau">
+                                        <span class="foundation-watermark red">♦</span>
+                                    </div>
+                                </div>
+
+                                <div class="pile-container">
+                                    <span class="pile-label">♣ Trèfles</span>
+                                    <div id="foundation-C" class="card-slot foundation-pile" data-suit="C" title="Fondation Trèfle">
+                                        <span class="foundation-watermark black">♣</span>
+                                    </div>
+                                </div>
+
+                                <div class="pile-container">
+                                    <span class="pile-label">♠ Piques</span>
+                                    <div id="foundation-S" class="card-slot foundation-pile" data-suit="S" title="Fondation Pique">
+                                        <span class="foundation-watermark black">♠</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Middle Area: 7 Tableau Columns -->
+                        <div class="tableau-area">
+                            <div class="tableau-columns-container" id="tableau-columns">
+                                <!-- 7 Tableau columns rendered dynamically by app.js -->
+                                <div class="tableau-col" id="col-0" data-col="0"><div class="col-header">1</div><div class="col-cards"></div></div>
+                                <div class="tableau-col" id="col-1" data-col="1"><div class="col-header">2</div><div class="col-cards"></div></div>
+                                <div class="tableau-col" id="col-2" data-col="2"><div class="col-header">3</div><div class="col-cards"></div></div>
+                                <div class="tableau-col" id="col-3" data-col="3"><div class="col-header">4</div><div class="col-cards"></div></div>
+                                <div class="tableau-col" id="col-4" data-col="4"><div class="col-header">5</div><div class="col-cards"></div></div>
+                                <div class="tableau-col" id="col-5" data-col="5"><div class="col-header">6</div><div class="col-cards"></div></div>
+                                <div class="tableau-col" id="col-6" data-col="6"><div class="col-header">7</div><div class="col-cards"></div></div>
+                            </div>
+                        </div>
+
+                        <!-- Board Bottom Status & Action Toolbar -->
+                        <div class="board-bottom-bar">
+                            <div class="board-stats">
+                                <span class="stat-item">
+                                    <span class="stat-name">Coups joués :</span>
+                                    <strong id="stat-moves-count">0</strong>
+                                </span>
+                                <span class="stat-item">
+                                    <span class="stat-name">Fondations :</span>
+                                    <strong id="stat-foundations-count">0 / 52</strong>
+                                </span>
+                                <span class="stat-item">
+                                    <span class="stat-name">Cartes cachées :</span>
+                                    <strong id="stat-hidden-count">21</strong>
+                                </span>
+                            </div>
+                            <div class="board-actions">
+                                <button id="btn-board-undo" class="btn btn-secondary btn-icon" title="Annuler le dernier coup">
+                                    ↩ Annuler
+                                </button>
+                                <button id="btn-board-redo" class="btn btn-secondary btn-icon" title="Rétablir le coup">
+                                    ↪ Rétablir
+                                </button>
+                                <button id="btn-board-draw" class="btn btn-primary btn-icon" title="Piocher une carte">
+                                    🂠 Piocher
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Section: Solver Sidebar & History Panel -->
+                <aside class="game-sidebar">
+                    <!-- Top Section: Solver Control Panel -->
+                    <div class="sidebar-card solver-panel" id="solver-panel">
+                        <div class="sidebar-card-header">
+                            <h3>Assistant de Résolution</h3>
+                            <span id="solver-status-badge" class="status-badge status-ready">Prête</span>
+                        </div>
+
+                        <!-- Reference State Guidance Banner -->
+                        <div class="reference-state-banner" style="background: rgba(43, 84, 126, 0.4); border-left: 3px solid #64b5f6; padding: 10px 12px; margin-bottom: 12px; border-radius: 4px; font-size: 0.83rem; line-height: 1.4; color: #e3f2fd;">
+                            <strong style="display: block; color: #90caf9; margin-bottom: 4px;">🎯 Situation de référence :</strong>
+                            Jouez d'abord librement vos coups naturels (glisser-déposer, clic ou double-clic). L'algorithme résoudra la partie directement à partir de cet état intermédiaire.
+                        </div>
+
+                        <!-- Solver Controls -->
+                        <div class="solver-controls">
+                            <button id="btn-start-solver" class="btn btn-success btn-block" title="Lancer la recherche depuis la situation de référence actuelle">
+                                🚀 Résoudre depuis l'état actuel
+                            </button>
+                            <button id="btn-stop-solver" class="btn btn-danger btn-block hidden" disabled>
+                                ⏹ Arrêter la recherche
+                            </button>
+                        </div>
+
+                        <!-- Solver Progress Bar -->
+                        <div class="solver-progress-wrapper" id="solver-progress-container">
+                            <div class="progress-bar-bg">
+                                <div id="solver-progress-bar" class="progress-bar-fill" style="width: 0%;"></div>
+                            </div>
+                        </div>
+
+                        <!-- Solver Metrics Grid -->
+                        <div class="solver-metrics-grid">
+                            <div class="metric-card">
+                                <span class="metric-label">Temps de calcul</span>
+                                <span class="metric-value" id="metric-solver-time">00:00.0</span>
+                            </div>
+                            <div class="metric-card">
+                                <span class="metric-label">États explorés</span>
+                                <span class="metric-value" id="metric-states-explored">0</span>
+                            </div>
+                            <div class="metric-card">
+                                <span class="metric-label">Solutions trouvées</span>
+                                <span class="metric-value" id="metric-solutions-count">0</span>
+                            </div>
+                            <div class="metric-card">
+                                <span class="metric-label">Meilleur score</span>
+                                <span class="metric-value" id="metric-best-score">0 / 52</span>
+                            </div>
+                        </div>
+
+                        <!-- Solver Recommendations & Results List -->
+                        <div class="solver-results-section">
+                            <div class="results-header">
+                                <h4>Résultats & Recommandations</h4>
+                            </div>
+                            <div id="solver-results-list" class="solver-results-list">
+                                <p class="results-empty-hint">
+                                    Cliquez sur "Lancer la recherche" pour obtenir les meilleures séquences de résolution.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bottom Section: History Panel -->
+                    <div class="sidebar-card history-panel" id="history-panel">
+                        <div class="sidebar-card-header">
+                            <h3>Historique des Actions</h3>
+                            <div class="history-actions">
+                                <button id="btn-history-undo" class="btn btn-small btn-secondary" title="Annuler">↩</button>
+                                <button id="btn-history-redo" class="btn btn-small btn-secondary" title="Rétablir">↪</button>
+                            </div>
+                        </div>
+                        <div id="history-list" class="history-list">
+                            <p class="history-empty-hint">Aucune action enregistrée pour le moment.</p>
+                        </div>
+                    </div>
+                </aside>
+            </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- 3. SOLUTION VIEWER MODAL                   -->
+        <!-- ========================================== -->
+        <div id="solution-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="solution-modal-title">
+            <div class="modal-dialog solution-dialog">
+                <div class="modal-header">
+                    <h3 id="solution-modal-title">Visionneuse de Solution</h3>
+                    <button class="modal-close-btn" id="btn-close-solution" title="Fermer la visionneuse">&times;</button>
+                </div>
+
+                <div class="modal-body">
+                    <!-- Step Progress and Move Description -->
+                    <div class="solution-nav-info">
+                        <span id="solution-step-counter" class="step-counter-badge">Coup 1 / 1</span>
+                        <div id="solution-step-desc" class="solution-step-highlight">
+                            Préparez-vous à visualiser la séquence de jeu.
+                        </div>
+                    </div>
+
+                    <!-- Mini Board Preview of Solitaire at Current Step -->
+                    <div class="solution-board-preview-container">
+                        <div class="solitaire-board mini-board" id="solution-board-preview">
+                            <!-- Dynamically updated preview board -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Navigation Controls -->
+                <div class="modal-footer solution-controls-footer">
+                    <button id="btn-sol-restart" class="btn btn-secondary">
+                        ⏮ Recommencer
+                    </button>
+                    <button id="btn-sol-prev" class="btn btn-secondary">
+                        ◀ Précédent
+                    </button>
+                    <button id="btn-sol-play" class="btn btn-primary">
+                        ▶ Lecture
+                    </button>
+                    <button id="btn-sol-next" class="btn btn-secondary">
+                        Suivant ▶
+                    </button>
+                    <button id="btn-sol-apply-first" class="btn btn-success" title="Appliquer ce coup au jeu en cours">
+                        ✓ Confirmer ce coup
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- 4. CARD REVEAL MODAL                       -->
+        <!-- ========================================== -->
+        <div id="reveal-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="reveal-modal-title">
+            <div class="modal-dialog reveal-dialog">
+                <div class="modal-header">
+                    <h3 id="reveal-modal-title">Carte révélée en colonne 1</h3>
+                </div>
+                <div class="modal-body">
+                    <p class="reveal-prompt">
+                        Une carte face cachée vient d'être retournée sur votre table réelle.<br>
+                        <strong>Quelle est cette carte ?</strong> Sélectionnez-la parmi les cartes restantes :
+                    </p>
+                    <div class="reveal-cards-grid" id="reveal-cards-grid">
+                        <!-- Populated with remaining available cards -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button id="btn-reveal-defer" class="btn btn-secondary">
+                        Reporter
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- 5. VICTORY CELEBRATION MODAL               -->
+        <!-- ========================================== -->
+        <div id="victory-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="victory-title">
+            <div class="modal-dialog victory-dialog">
+                <div class="victory-icon">🎉</div>
+                <h2 id="victory-title">Victoire ! 🎉</h2>
+                <p class="victory-message">
+                    Félicitations ! Toutes les cartes ont été placées avec succès sur les fondations !
+                </p>
+                <div class="victory-stats" id="victory-stats">
+                    <!-- Total moves, time, etc. -->
+                </div>
+                <div class="modal-footer victory-footer">
+                    <button id="btn-victory-new-game" class="btn btn-primary btn-large">
+                        Nouvelle Partie
+                    </button>
+                    <button id="btn-victory-close" class="btn btn-secondary">
+                        Fermer
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- 6. TOAST NOTIFICATIONS CONTAINER           -->
+        <!-- ========================================== -->
+        <div id="toast-container" class="toast-container" aria-live="polite"></div>
+
+    </main>
+
+    <!-- Vanilla JS Application -->
+    <script src="js/app.js"></script>
+</body>
+</html>
